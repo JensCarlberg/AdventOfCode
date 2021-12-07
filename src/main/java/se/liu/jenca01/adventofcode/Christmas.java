@@ -38,14 +38,18 @@ public abstract class Christmas {
         return this.getClass().getSimpleName();
     }
 
-    private static Stream<String> readData(String fileBase, String extras) throws Exception {
-        var path = Paths.get(new File(".").getCanonicalPath(), "src", "main", "resources", "2021", fileBase + extras + ".txt");
+    private Stream<String> readData(String fileBase, String extras) throws Exception {
+        var path = Paths.get(new File(".").getCanonicalPath(), "src", "main", "resources", year(), fileBase + extras + ".txt");
         ensureExists(path);
         var data = Files.lines(path);
         return data;
     }
 
-    private static void ensureExists(Path path) throws Exception {
+    public String year() {
+        return this.getClass().getPackageName().replace("se.liu.jenca01.adventofcode.y", "");
+    }
+
+    private void ensureExists(Path path) throws Exception {
         var file = path.toFile();
         if (file.exists()) return;
         file.createNewFile();
