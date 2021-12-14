@@ -128,7 +128,7 @@ public class Dec13 extends Christmas {
         for(long y=0; y<=maxY; y++) {
             for(long x=0; x<=maxX; x++)
                 if (map.contains(new ImmutablePair<Long, Long>(x, y)))
-                    System.out.print("#");
+                    System.out.print("█");
                 else
                     System.out.print(" ");
             System.out.println();
