@@ -64,13 +64,13 @@ public class Dec20 extends Christmas {
             for(int x=0; x<lines.get(y).length(); x++)
                 if (lines.get(y).charAt(x) == '#')
                     points.add(Pair.of(x, y));
-        
+
         return new PuzzleInput(algo, points, lines.size(), lines.get(0).length());
     }
 
     public long solve1(Stream<String> stream) {
         var data = convertData(stream);
-        
+
         for (int i=0; i<2; i++)
             // TODO: take care of that all points outside will be lit after iter 1 (and u lit after 2
             data.points = enhance(data, i);
