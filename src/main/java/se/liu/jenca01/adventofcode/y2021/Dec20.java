@@ -10,7 +10,7 @@ import se.liu.jenca01.adventofcode.Christmas;
 public class Dec20 extends Christmas {
 
     long sampleAnswer1 = 35;
-    long sampleAnswer2 = 0;
+    long sampleAnswer2 = 3351;
 
     class PuzzleInput {
 
@@ -69,18 +69,20 @@ public class Dec20 extends Christmas {
     }
 
     public long solve1(Stream<String> stream) {
-        var data = convertData(stream);
-
-        for (int i=0; i<2; i++)
-            // TODO: take care of that all points outside will be lit after iter 1 (and u lit after 2
-            data.points = enhance(data, i);
-        return data.points.size();
+        return solveIter(stream, 2);
     }
 
     private Set<Pair<Integer, Integer>> enhance(PuzzleInput data, int i) {
+        System.out.print(".");
+        int extraReach = 3; // Next iteration migh depend on pixels this far out.
+        var minX = data.points.stream().mapToInt(p -> p.getLeft()).min().orElse(0);
+        var maxX = data.points.stream().mapToInt(p -> p.getLeft()).max().orElse(0);
+        var minY = data.points.stream().mapToInt(p -> p.getRight()).min().orElse(0);
+        var maxY = data.points.stream().mapToInt(p -> p.getRight()).max().orElse(0);
+
         var newPoints = new HashSet<Pair<Integer, Integer>>();
-        for(int x=0-i; x<data.maxX+i; x++)
-            for(int y=0-i; y<data.maxY+i; y++) {
+        for(int x = minX - extraReach; x <= maxX + extraReach; x++)
+            for(int y = minY - extraReach; y <= maxY + extraReach; y++) {
                 int calcIndex = calcIndex(data, x, y, i);
                 char charAt = data.algo.charAt(calcIndex);
                 if (charAt == '#')
@@ -99,14 +101,29 @@ public class Dec20 extends Christmas {
 
     private char translatePoint(PuzzleInput data, int px, int py, int i) {
         if (i % 2 == 1) {
-            if (px<-i || px >=data.maxX+i) return '1';
-            if (py<-i || py >=data.maxY+i) return '1';
+            var outsideReturnVal = data.algo.charAt(0) == '#' ? '1' : '0';
+            if (px<-i || px >=data.maxX+i) return outsideReturnVal;
+            if (py<-i || py >=data.maxY+i) return outsideReturnVal;
         }
         return data.points.contains(Pair.of(px, py)) ? '1' : '0';
     }
 
     public long solve2(Stream<String> stream) {
-        return 0;
+        return solveIter(stream, 50);
+    }
+
+    public long solveIter(Stream<String> stream, int iterCount) {
+        var data = convertData(stream);
+
+        for (int i=0; i<iterCount; i++)
+            data.points = enhance(data, i);
+        System.out.println();
+        var realPoints = new HashSet<Pair<Integer, Integer>>();
+        realPoints.addAll(data.points);
+        for (var point: data.points)
+            if (point.getLeft() < -iterCount || point.getLeft() > data.maxX + iterCount || point.getRight() < -iterCount || point.getRight() > data.maxY + iterCount)
+                realPoints.remove(point);
+        return realPoints.size();
     }
 }
 
