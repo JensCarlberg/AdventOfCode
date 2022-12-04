@@ -50,7 +50,7 @@ public class Dec18 extends Christmas {
     }
 
     private MutablePair<Object, Object> parseNum(String line) {
-        line = line.replace('[', '(').replace(']',')'); // borde ge num.equals(parseNum(num.toString)) == true
+        line = line.replace('[', '(').replace(']',')'); // To get num.equals(parseNum(num.toString)) == true
         var stack = new Stack<MutablePair<Object, Object>>();
         var currPair = new MutablePair<Object, Object>();
         for (var c: line.toCharArray()) {
@@ -75,7 +75,8 @@ public class Dec18 extends Christmas {
                     else currPair.right = numVal;
             }
         }
-        return (MutablePair<Object, Object>) currPair.getLeft();
+        MutablePair<Object, Object> returnVal = (MutablePair<Object, Object>) currPair.getLeft();
+        return returnVal;
     }
 
     public long solve1(Stream<String> stream) {
@@ -138,7 +139,7 @@ public class Dec18 extends Christmas {
             added.left = new MutablePair<Object, Object>(left/2, (left+1)/2);
             return true;
         }
-        
+
         if (added.getRight() instanceof Pair)
             if (split((MutablePair<Object, Object>) added.getRight()))
                 return true;
