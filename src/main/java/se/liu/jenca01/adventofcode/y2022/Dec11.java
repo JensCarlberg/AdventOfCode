@@ -183,7 +183,7 @@ public class Dec11 extends Christmas {
                 case 9: return mod9(num);
                 case 10: return mod2(num) && mod5(num);
                 case 11: return mod11(num);
-                case 12: return mod12(num);
+                case 12: return mod3(num) && mod4(num);
                 case 13: return mod13(num);
                 case 14: return mod2(num) && mod7(num);
                 case 15: return mod3(num) && mod5(num);
@@ -252,6 +252,17 @@ public class Dec11 extends Christmas {
             for (var c: num.toString().toCharArray())
                 sum += c - '0';
             return sum % 9 == 0;
+        }
+
+        private static boolean mod11(BigInteger num) {
+            var numS = num.toString().toCharArray();
+            var sum = 0;
+            var sign = 1;
+            for (var c: numS) {
+                sum += (c - '0') * sign;
+                sign *= -1;
+            }
+            return sum % 7 == 0;
         }
 
         private static String xDigits(String numS, int pos, int x) {
