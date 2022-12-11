@@ -7,8 +7,10 @@ import java.util.Stack;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import com.google.common.annotations.VisibleForTesting;
 import se.liu.jenca01.adventofcode.Christmas;
 
+@SuppressWarnings("unchecked")
 public class Dec18 extends Christmas {
 
     long sampleAnswer1 = 4140; // [[[[6,6],[7,6]],[[7,7],[7,0]]],[[[7,7],[7,7]],[[7,8],[9,9]]]]
@@ -41,15 +43,43 @@ public class Dec18 extends Christmas {
         System.out.println(simpleClassName() + " solve2: " + solve2(myData()));
     }
 
-    private List<MutablePair<Object, Object>> convertData(Stream<String> data) {
+    private List<Node> convertData(Stream<String> data) {
         var lines = toList(data);
-        var nums = new ArrayList<MutablePair<Object, Object>>();
+        var nums = new ArrayList<Node>();
         for (var line: lines)
             nums.add(parseNum(line));
         return nums;
     }
 
-    private MutablePair<Object, Object> parseNum(String line) {
+    @VisibleForTesting
+    Node parseNum(String line) {
+        var nodes = new Stack<Node>();
+        var tokens = new Stack<Character>();
+        for (var c: line.toCharArray()) {
+            switch (c) {
+                case '[':
+                    tokens.push(c);
+                    break;
+                case ']':
+                    var right = nodes.pop();
+                    var left = nodes.pop();
+                    nodes.push(Node.node(left, right));
+                    tokens.pop();
+                    break;
+                case ',':
+                    break;
+                default:
+                    int numVal = c - '0';
+                    nodes.push(Node.leaf(numVal));
+            }
+        }
+        Node retVal = nodes.pop();
+        if (nodes.empty() && tokens.empty())
+            return retVal;
+        throw new RuntimeException("Not all stacks empty! nodes="+nodes.size()+" tokens="+tokens.size());
+    }
+
+    private MutablePair<Object, Object> parseNum_2021(String line) {
         line = line.replace('[', '(').replace(']',')'); // To get num.equals(parseNum(num.toString)) == true
         var stack = new Stack<MutablePair<Object, Object>>();
         var currPair = new MutablePair<Object, Object>();
@@ -81,32 +111,36 @@ public class Dec18 extends Christmas {
 
     public long solve1(Stream<String> stream) {
         var data = convertData(stream);
-        MutablePair<Object, Object> added = data.remove(0);
+        Node added = data.remove(0);
         for (var num: data) {
-            added = new MutablePair<>(added, num);
+            added = new Node(added, num, null);
             while (reduce(added)) {}
         }
         return 0;
     }
 
-    private boolean reduce(MutablePair<Object, Object> added) {
-        var parents = new Stack<MutablePair<Object, Object>>();
+    private boolean reduce(Node added) {
+        var parents = new Stack<Node>();
         if (explode(added, 0, parents)) return true;
         if (split(added)) return true;
         return false;
     }
 
-    private boolean explode(MutablePair<Object, Object> added, int depth, Stack<MutablePair<Object,Object>> parents) {
-        if (added.left instanceof Pair) {
-            parents.add((MutablePair<Object, Object>) added.left);
-            if (explode((MutablePair<Object, Object>) added.left, depth+1, parents))
+    Node explode(Node node) {
+        return node;
+    }
+
+    private boolean explode(Node added, int depth, Stack<Node> parents) {
+        if (!added.left.isLeaf()) {
+            parents.add(added.left);
+            if (explode(added.left, depth+1, parents))
                 return true;
             parents.pop();
         }
 
-        if (added.right instanceof Pair) {
-            parents.add((MutablePair<Object, Object>) added.right);
-            if (explode((MutablePair<Object, Object>) added.right, depth+1, parents))
+        if (!added.right.isLeaf()) {
+            parents.add(added.right);
+            if (explode(added.right, depth+1, parents))
                 return true;
             parents.pop();
         }
@@ -130,22 +164,22 @@ public class Dec18 extends Christmas {
         return list;
     }
 
-    private boolean split(MutablePair<Object, Object> added) {
-        if (added.getLeft() instanceof Pair)
-            if (split((MutablePair<Object, Object>) added.getLeft()))
+    private boolean split(Node added) {
+        if (!added.left.isLeaf())
+            if (split(added.left))
                 return true;
-        var left = (int) added.getLeft();
+        var left = (int) added.left.leaf;
         if (left > 9) {
-            added.left = new MutablePair<Object, Object>(left/2, (left+1)/2);
+            added.left = Node.node(Node.leaf(left/2), Node.leaf(((left+1)/2)));
             return true;
         }
 
-        if (added.getRight() instanceof Pair)
-            if (split((MutablePair<Object, Object>) added.getRight()))
+        if (!added.right.isLeaf())
+            if (split((added.right)))
                 return true;
-        var right = (int) added.getRight();
+        var right = (int) added.right.leaf;
         if (right > 9) {
-            added.right = new MutablePair<Object, Object>(right/2, (right+1)/2);
+            added.right = Node.node(Node.leaf(right/2), Node.leaf(((right+1)/2)));
             return true;
         }
         return false;
@@ -153,6 +187,27 @@ public class Dec18 extends Christmas {
 
     public long solve2(Stream<String> stream) {
         return 0;
+    }
+
+    static class Node {
+        Node left;
+        Node right;
+        Integer leaf;
+        Node(Node left, Node right, Integer leaf) {
+            this.left = left;
+            this.right = right;
+            this.leaf = leaf;
+
+        }
+        boolean isLeaf() { return leaf != null; }
+        @Override public String toString() {
+            if (isLeaf()) return ""+leaf;
+            return "["+left.toString()+","+right.toString()+"]";
+        }
+
+        static Node leaf(Integer leaf) { return new Node(null, null, leaf); }
+        static Node node(Node left, Node right) { return new Node(left, right, null); }
+        static Node empty() { return new Node(null, null, null); }
     }
 }
 
