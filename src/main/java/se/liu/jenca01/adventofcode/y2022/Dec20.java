@@ -83,21 +83,10 @@ public class Dec20 extends Christmas {
     }
 
     private void mix(int pos, ArrayList<Num> mixed) {
-    	Num posNum = mixed.get(pos);
-		var posVal = posNum.value;
-    	var newPos = (int)(pos + posVal);
-    	while (newPos < 0) newPos += mixed.size() - 1;
-    	while (newPos >= mixed.size()) newPos -= mixed.size() - 1;
-    	if (newPos == 0) {
-    		mixed.add(posNum);
-    		mixed.remove(pos);
-    	} else if (pos < newPos) {
-    		mixed.add(newPos + 1, posNum);
-    		mixed.remove(pos);
-    	} else {
-    		mixed.remove(pos);
-    		mixed.add(newPos, posNum);
-    	}
+    	Num  posNum  = mixed.remove(pos);
+    	var newPos = (pos + posNum.value) % mixed.size();
+    	if (newPos < 0) newPos += mixed.size();
+    	mixed.add((int) newPos, posNum);
 	}
 
 	public long solve2(Stream<String> stream) {
@@ -105,12 +94,13 @@ public class Dec20 extends Christmas {
     	var mixed = new ArrayList<Num>();
     	mixed.addAll(puzzle);
     	var ms = new TreeSet<Num>();
-    	for (int i=0; i<10; i++)
+    	for (int i=0; i<10; i++) {
     		for(var num: puzzle) {
     			if (num.value == 0) continue;
     			var pos = mixed.indexOf(num);
     			mix(pos, mixed);
     		}
+    	}
     	var pos0 = 0;
     	for (; pos0 < mixed.size(); pos0++) {
     		if (mixed.get(pos0).value == 0)
