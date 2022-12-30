@@ -74,16 +74,15 @@ public class Dec11 extends Christmas {
         return line.substring(matchPos + matchAdd);
     }
 
-    private List<Item> getItems(String line) {
+    private List<Long> getItems(String line) {
         var itemsS = lineAfter(line, "Starting items: ").split(",");
-        var items = new ArrayList<Item>();
+        var items = new ArrayList<Long>();
         for (int i=0; i<itemsS.length; i++)
-            items.add(new Item(Integer.parseInt(itemsS[i].strip()), new ArrayList<Op>()));
+            items.add(Long.parseLong(itemsS[i].strip()));
         return items;
     }
 
     private Op getOperation(String opString) {
-    	System.out.println(opString);
     	var opS = lineAfter(opString, "Operation: new = old ");
     	var parts = opS.split(" ");
     	var opType = "+".equals(parts[0]) ? OpType.ADD : OpType.MULT;
@@ -92,32 +91,48 @@ public class Dec11 extends Christmas {
     }
 
     public long solve1(Stream<String> stream) {
-        return solve(stream, 20, 3);
+    	var worryReduction = 3;
+    	var rounds = 20;
+        return solve(stream, worryReduction, rounds);
     }
 
-    public long solve(Stream<String> stream, int roundCount, int worryDiv) {
-        var monkeys = convertData(stream);
-        var monkeyHandleCounts = new TreeMap<Integer, Integer>();
-        for (var monkey: monkeys.keySet())
-            monkeyHandleCounts.put(monkey, 0);
-        for (int round = 0; round < roundCount; round++) {
-            if (round > 0 && round % 100 == 0)
-                System.out.print(".");
-            for (var monkeyId: monkeys.keySet())
-                monkeyThrows(monkeyId, monkeys.get(monkeyId), monkeys, monkeyHandleCounts, worryDiv);
-        }
-        if (roundCount > 20) System.out.println();
-        List<Integer> mostHandles = monkeyHandleCounts.values().stream().sorted((a, b) -> b.compareTo(a)).toList();
-        Integer t1 = mostHandles.get(0);
-        Integer t2 = mostHandles.get(1);
-        return 1L * t1 * t2;
-    }
+	private long solve(Stream<String> stream, int worryReduction, int rounds) {
+		var monkeys = convertData(stream);
+		var commonMod = calcCommonMod(monkeys);
+		var monkeyHandleCounts = new TreeMap<Integer, Integer>();
+		for (var monkey: monkeys.keySet())
+		    monkeyHandleCounts.put(monkey, 0);
+		for (int round = 0; round < rounds; round++) {
+		    for (var monkeyId: monkeys.keySet())
+		        monkeyThrows(monkeyId, monkeys.get(monkeyId), monkeys, monkeyHandleCounts, worryReduction, commonMod);
+		}
+		List<Integer> mostHandles = monkeyHandleCounts.values().stream().sorted((a, b) -> b.compareTo(a)).toList();
+		Integer t1 = mostHandles.get(0);
+		Integer t2 = mostHandles.get(1);
+		return 1L * t1 * t2;
+	}
 
-    private void monkeyThrows(int id, Monkey monkey, Map<Integer, Monkey> monkeys, Map<Integer, Integer> monkeyHandleCounts, int worryDiv) {
+    private long calcCommonMod(Map<Integer, Monkey> monkeys) {
+    	var mod = 1L;
+    	for (var monkey: monkeys.values())
+    		mod *= monkey.test;
+		return mod;
+	}
+
+	private void monkeyThrows(int id, Monkey monkey, Map<Integer, Monkey> monkeys, Map<Integer, Integer> monkeyHandleCounts, int worryDiv, long commonMod) {
         for (var worryItem: monkey.items) {
             addMonkeyHandleCount(id, monkeyHandleCounts);
-            worryItem.operations.add(monkey.operation);
-            if (worryItem.currentWorry(worryDiv, monkey.test) == 0) {
+            switch (monkey.operation.type) {
+			case ADD:
+				worryItem += monkey.operation.param;
+				break;
+			case MULT:
+				worryItem *= (monkey.operation.param == 0) ? worryItem : monkey.operation.param;
+				break;
+            }
+            worryItem /= worryDiv;
+            worryItem %= commonMod;
+            if (worryItem % monkey.test == 0) {
                 int target = monkey.trueTarget;
                 throwTo(monkeys.get(target), worryItem);
             } else {
@@ -128,7 +143,7 @@ public class Dec11 extends Christmas {
         monkey.items.clear();
     }
 
-    private void throwTo(Monkey monkey, Item item) {
+    private void throwTo(Monkey monkey, Long item) {
         monkey.items.add(item);
     }
 
@@ -137,31 +152,28 @@ public class Dec11 extends Christmas {
     }
 
     public long solve2(Stream<String> stream) {
-        return solve(stream, 10000, 1);
+    	var worryReduction = 1;
+    	var rounds = 10000;
+        return solve(stream, worryReduction, rounds);
     }
 
     enum OpType { ADD, MULT }
     record Op(OpType type, int param) implements Comparable<Op> {
+    	@Override public String toString() { return String.format("%s: %s", type, param); }
 		@Override public int compareTo(Op o) {
 			return Objects.compare(this, o, Comparator.comparing(Op::type).thenComparing(Op::param));
 		}
     }
-    record Item(long startWorry, List<Op> operations) {
-    	void addOp(Op op) { operations.add(op); }
-    	long currentWorry(int worryDiv, int monkeyTest) {
-    		var worryRest = startWorry % monkeyTest;
-    		for(var op: operations) {
-    			if (op.type == OpType.ADD)
-    				worryRest += op.param;
-    			if (op.type == OpType.MULT)
-    				worryRest *= op.param;
-        		worryRest = (worryRest / worryDiv) % monkeyTest;
-    		}
-    		return worryRest;
+    record Monkey(List<Long> items, Op operation, long test, int trueTarget, int falseTarget) implements Comparable<Monkey> {
+    	@Override public String toString() {
+    		return String.format(""
+    				+ "Items: %s\n"
+    				+ "Operation: %s\n"
+    				+ "Test: %s\n"
+    				+ "  true: %s\n"
+    				+ "  false: %s\n----\n",
+    				items.toString(), operation, test, trueTarget, falseTarget);
     	}
-    }
-    record Monkey(List<Item> items, Op operation, int test, int trueTarget, int falseTarget) implements Comparable<Monkey> {
-
         @Override public int compareTo(Monkey o) {
             return Objects.compare(
                     this,
