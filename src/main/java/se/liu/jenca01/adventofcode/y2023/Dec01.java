@@ -1,4 +1,4 @@
-package se.liu.jenca01.adventofcode.y2021;
+package se.liu.jenca01.adventofcode.y2023;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -8,13 +8,13 @@ import java.util.stream.Stream;
 
 import se.liu.jenca01.adventofcode.Christmas;
 
-public class Dec19 extends Christmas {
+public class Dec01 extends Christmas {
 
-    long sampleAnswer1 = 79;
+    long sampleAnswer1 = 0;
     long sampleAnswer2 = 0;
 
     public static void main(String[] args) throws Exception {
-        var christmas = new Dec19();
+        var christmas = new Dec01();
         christmas.solveSample();
         christmas.solveMy();
     }
@@ -40,7 +40,7 @@ public class Dec19 extends Christmas {
         System.out.println(simpleClassName() + " solve2: " + solve2(myData()));
     }
 
-    List<Long> convertData(Stream<String> data) {
+    private List<Long> convertData(Stream<String> data) {
         return data.map(s -> Long.parseLong(s)).collect(Collectors.toList());
     }
 

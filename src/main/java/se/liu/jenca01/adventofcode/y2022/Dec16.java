@@ -11,10 +11,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import se.liu.jenca01.adventofcode.Christmas;
+import se.liu.jenca01.adventofcode.utils.SetUtils;
 
 public class Dec16 extends Christmas {
 
@@ -22,6 +22,7 @@ public class Dec16 extends Christmas {
 	long sampleAnswer2 = 1707;
     boolean solve1 = false;
     boolean solve2 = true;
+    boolean solveMy = false;
 
 	public static void main(String[] args) throws Exception {
 		var christmas = new Dec16();
@@ -53,23 +54,57 @@ public class Dec16 extends Christmas {
 
 	@Override
 	public void solveMy() throws Exception {
+	    if (!solveMy) return;
 	    if (solve1) System.out.println(simpleClassName() + " solve1: " + solve1(myData()));
 	    if (solve2) System.out.println(simpleClassName() + " solve2: " + solve2(myData()));
 	}
 
-	private Map<String, Node> convertData(Stream<String> data) {
+	private Puzzle convertData(Stream<String> data) {
 		var lines = data.toList();
-		var puzzle = new TreeMap<String, Node>();
+		var nodes = new TreeMap<String, Node>();
 		for (var line: lines) {
 			var name = line.split(" ")[1];
 			var valve = Integer.parseInt(line.split(";")[0].split("=")[1]);
-			var nodes = getConnectedNodes(line.split(";")[1]);
-			puzzle.put(name, new Node(name, valve, nodes));
+			var connectedNodes = getConnectedNodes(line.split(";")[1]);
+			nodes.put(name, new Node(name, valve, connectedNodes));
 		}
-		return puzzle;
+		var distances = new TreeMap<Node, Map<Node, Integer>>();
+		for (var n: nodes.values()) {
+		    distances.put(n, findDistances(n, nodes));
+		}
+		return new Puzzle(nodes, distances);
 	}
 
-	private List<String> getConnectedNodes(String connectedDesc) {
+	private Map<Node, Integer> findDistances(Node fromNode, TreeMap<String, Node> nodes) {
+        var distances = new TreeMap<Node, Integer>();
+	    for (var toNode: nodes.values())
+	        if (fromNode != toNode)
+	            distances.put(toNode, findDistance(fromNode.name, toNode.name, nodes));
+        return distances;
+    }
+
+    private int findDistance(String fromNode, String targetNode, TreeMap<String, Node> nodes) {
+        var visited = new TreeSet<String>();
+        visited.add(fromNode);
+        var distance = 0;
+        while (true) {
+            distance++;
+            var newVisited = new TreeSet<String>();
+            for (var from: visited)
+                for (var to: nodes.get(from).connected) {
+                    if (to.equals(targetNode))
+                        return distance;
+                    newVisited.add(to);
+                }
+            if (newVisited.size() == nodes.size())
+                throw new RuntimeException(String.format("No route between nodes. from=%s, to=%s", fromNode, targetNode));
+            if (SetUtils.equals(visited, newVisited))
+                throw new RuntimeException(String.format("No route between nodes, nodes form multiple subnets. from=%s, to=%s", fromNode, targetNode));
+            visited = newVisited;
+        }
+    }
+
+    private List<String> getConnectedNodes(String connectedDesc) {
 		var nodes = new ArrayList<String>();
 		for (var p: connectedDesc.split(" "))
 			if (p.strip().length() > 0 && p.equals(p.toUpperCase()))
@@ -79,12 +114,12 @@ public class Dec16 extends Christmas {
 
 	public long solve1(Stream<String> stream) {
 		var puzzle = convertData(stream);
-		var pos = puzzle.get("AA");
+		var pos = puzzle.nodes.get("AA");
 		var time = 30;
 		var states = new TreeSet<State>();
-		states.add(new State(List.of(pos), Set.of(), 0));
+		states.add(new State(List.of(pos), Set.of(), 0, State.calcKey(List.of(pos), Set.of())));
 		var currMax = 0;
-		var maxFlowPerRound = puzzle.values().stream().mapToInt(Node::flow).sum();
+		var maxFlowPerRound = puzzle.nodes.values().stream().mapToInt(Node::flow).sum();
 		for (int i=0; i<time; i++) {
 		    var maxRestFlow = (time - i) * maxFlowPerRound;
 		    System.out.println(String.format("Round %2d: stateCount=%d", (i+1), states.size()));
@@ -93,7 +128,7 @@ public class Dec16 extends Christmas {
 			    if (s.totalFlow + maxRestFlow < currMax)
 			        // This state is too far behind the curve, abandon this state.
 			        continue states1;
-                var maxExtraFlow = getMaxExtraFlow(getClosedNodes(puzzle.values(), s.openNodes), 30 - i);
+                var maxExtraFlow = getMaxExtraFlow(getClosedNodes(puzzle.nodes.values(), s.openNodes), 30 - i);
                 if (s.totalFlow + maxExtraFlow < currMax)
                     // This state is too far behind the curve, abandon this state.
                     continue states1;
@@ -107,7 +142,7 @@ public class Dec16 extends Christmas {
 				if (s.positions.get(0).flow > 0 && !s.openNodes.contains(s.positions.get(0)))
 					newStates.add(s.moveAndOpen(s.positions, Set.of(s.positions.get(0))));
 				for (var n: s.positions.get(0).connected)
-					newStates.add(s.moveAndOpen(List.of(puzzle.get(n)), Set.of()));
+					newStates.add(s.moveAndOpen(List.of(puzzle.nodes.get(n)), Set.of()));
 			}
 			states = newStates;
 			currMax = states.stream().mapToInt(s -> s.totalFlow).max().getAsInt();
@@ -116,7 +151,7 @@ public class Dec16 extends Christmas {
 	}
 
 	private int getMaxExtraFlow(Collection<Node> closedNodes, int remainingRounds) {
-        return remainingRounds * State.flowFrom(closedNodes);
+        return remainingRounds * Node.flowFrom(closedNodes);
     }
 
     private Collection<Node> getClosedNodes(Collection<Node> allNodes, Collection<Node> openNodes) {
@@ -128,12 +163,12 @@ public class Dec16 extends Christmas {
 
     public long solve2(Stream<String> stream) {
         var puzzle = convertData(stream);
-        var pos = puzzle.get("AA");
+        var pos = puzzle.nodes.get("AA");
         var time = 26;
         var states = new TreeSet<State>();
-        states.add(new State(List.of(pos, pos), Set.of(), 0));
+        states.add(new State(List.of(pos, pos), Set.of(), 0, State.calcKey(List.of(pos, pos), Set.of())));
         var currMax = 0;
-        var maxFlowPerRound = puzzle.values().stream().mapToInt(Node::flow).sum();
+        var maxFlowPerRound = puzzle.nodes.values().stream().mapToInt(Node::flow).sum();
         for (int i=0; i<time; i++) {
             var maxRestFlow = (time - i) * maxFlowPerRound;
             System.out.println(String.format("Round %2d: stateCount=%d", (i+1), states.size()));
@@ -142,16 +177,21 @@ public class Dec16 extends Christmas {
                 if (s.totalFlow + maxRestFlow < currMax)
                     // This state is too far behind the curve, abandon this state.
                     continue states1;
-                var maxExtraFlow = getMaxExtraFlow(getClosedNodes(puzzle.values(), s.openNodes), 30 - i);
+//                var maxExtraFlow = getMaxExtraFlow(getClosedNodes(puzzle.nodes.values(), s.openNodes), time - i);
+                var maxExtraFlow = flowFromClosedNodes(
+                        getClosedNodes(puzzle.nodes.values(), s.openNodes),
+                        s.positions,
+                        time - i,
+                        puzzle.distances);
                 if (s.totalFlow + maxExtraFlow < currMax)
                     // This state is too far behind the curve, abandon this state.
                     continue states1;
-                states2: for (var s2: states) {
-                    if (s == s2) continue states2;
-                    if (s.positions.equals(s2.positions) && s.openNodes.equals(s2.openNodes) && s.totalFlow < s2.totalFlow)
-                        // There is another identical set of positions and open valves with more flow already, abandon this state.
-                        continue states1;
-                }
+//                states2: for (var s2: states) {
+//                    if (s == s2) continue states2;
+//                    if (s.positions.equals(s2.positions) && s.openNodes.equals(s2.openNodes) && s.totalFlow < s2.totalFlow)
+//                        // There is another identical set of positions and open valves with more flow already, abandon this state.
+//                        continue states1;
+//                }
                 newStates.add(s.waitOne()); // Doing nothing is always an option
                 var p0 = s.positions.get(0);
                 var p1 = s.positions.get(1);
@@ -163,19 +203,19 @@ public class Dec16 extends Christmas {
                     }
                     // move 1
                     for (var n: p1.connected)
-                        newStates.add(s.moveAndOpen(List.of(p0, puzzle.get(n)), Set.of(p0)));
+                        newStates.add(s.moveAndOpen(List.of(p0, puzzle.nodes.get(n)), Set.of(p0)));
                 }
                 // open 1,
                 if (p1.flow > 0 && !s.openNodes.contains(p1)) {
                     // move 0
                     for (var n: p0.connected)
-                        newStates.add(s.moveAndOpen(List.of(p1, puzzle.get(n)), Set.of(p1)));
+                        newStates.add(s.moveAndOpen(List.of(p1, puzzle.nodes.get(n)), Set.of(p1)));
                 }
                 // move 0,
                 for (var n0: p0.connected)
                     // move 1
                     for (var n1: p1.connected)
-                        newStates.add(s.moveAndOpen(List.of(puzzle.get(n0), puzzle.get(n1)), Set.of()));
+                        newStates.add(s.moveAndOpen(List.of(puzzle.nodes.get(n0), puzzle.nodes.get(n1)), Set.of()));
             }
             states = newStates;
             currMax = states.stream().mapToInt(s -> s.totalFlow).max().getAsInt();
@@ -183,30 +223,49 @@ public class Dec16 extends Christmas {
         return currMax;
 	}
 
-	record State(List<Node> positions, Set<Node> openNodes, int totalFlow) implements Comparable<State> {
+    static int flowFromClosedNodes(Collection<Node> closedNodes, Collection<Node> reachableFrom, int roundsLeft, Map<Node, Map<Node, Integer>> distances) {
+        int totalFlow = 0;
+        for (var n: closedNodes) {
+            if (n.flow == 0) continue;
+            var nDistances = distances.get(n);
+            if (reachableFrom.contains(n)) continue;
+            var minDist = Integer.MAX_VALUE;
+            for (var from: reachableFrom)
+                minDist = Math.min(minDist, nDistances.get(from));
+            if (roundsLeft - 1 - minDist <= 0) continue;
+            totalFlow += n.flow * (roundsLeft - 1 - minDist);
+        }
+        return totalFlow;
+    }
+
+	record State(List<Node> positions, Set<Node> openNodes, int totalFlow, String key) implements Comparable<State> {
 		@Override
 		public int compareTo(State o) {
 		    return Objects.compare(this, o, Comparator
 		            .comparing(State::totalFlow)
-		            .thenComparing(State::positionKey)
-		            .thenComparing(State::openNodesKey));
+		            .thenComparing(State::key));
 		}
-        String positionKey() { return key(positions); }
-        String openNodesKey() { return key(openNodes); }
-        String key(Collection<Node> nodes) { return String.join(",", nodes.stream().sorted().map(n -> n.name).toList().toString()); }
-		Set<Node> sort() { return openNodes.stream().sorted().collect(Collectors.toSet()); }
 		State moveAndOpen(List<Node> newPositions, Collection<Node> newOpens) {
 		    var nodes = new TreeSet<Node>();
 		    nodes.addAll(openNodes);
 		    nodes.addAll(newOpens);
-		    return new State(newPositions.stream().sorted().toList(), Set.copyOf(nodes), totalFlow + flowFrom(openNodes));
+		    return new State(
+		            newPositions.stream().sorted().toList(),
+		            Set.copyOf(nodes),
+		            totalFlow + Node.flowFrom(openNodes),
+		            calcKey(newPositions, nodes));
 		}
 		State waitOne() { return moveAndOpen(positions, Set.of()); }
-		static int flowFrom(Collection<Node> nodes) { return nodes.stream().mapToInt(n -> n.flow).sum(); }
+		static String calcKey(List<Node> positions, Set<Node> openNodes) {
+		    return calcKey(positions) + "#" + calcKey(openNodes);
+		}
+		static String calcKey(Collection<Node> nodes) { return String.join(",", nodes.stream().sorted().map(n -> n.name).toList().toString()); }
 	}
 	record Node(String name, int flow, List<String> connected) implements Comparable<Node> {
 		@Override public int compareTo(Node o) { return name.compareTo(o.name); }
+		static int flowFrom(Collection<Node> nodes) { return nodes.stream().mapToInt(n -> n.flow).sum(); }
 	}
+	record Puzzle(Map<String, Node> nodes, Map<Node, Map<Node, Integer>> distances) {}
 }
 
 /*
