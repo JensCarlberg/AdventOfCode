@@ -10,8 +10,8 @@ import se.liu.jenca01.adventofcode.Christmas;
 
 public class Dec01 extends Christmas {
 
-    long sampleAnswer1 = 0;
-    long sampleAnswer2 = 0;
+    long sampleAnswer1 = 142;
+    long sampleAnswer2 = 142;
 
     public static void main(String[] args) throws Exception {
         var christmas = new Dec01();
@@ -40,21 +40,87 @@ public class Dec01 extends Christmas {
         System.out.println(simpleClassName() + " solve2: " + solve2(myData()));
     }
 
-    private List<Long> convertData(Stream<String> data) {
-        return data.map(s -> Long.parseLong(s)).collect(Collectors.toList());
+    private List<Long> convertData1(Stream<String> data) {
+        return data.map(s -> lineToNumber1(s)).collect(Collectors.toList());
     }
 
     public long solve1(Stream<String> stream) {
-        return 0;
+        return convertData1(stream).stream().mapToLong(l -> l).sum();
+    }
+
+    private long lineToNumber1(String l) {
+        return firstNum(l) * 10 + lastNum(l);
+    }
+
+    private int firstNum(String l) {
+        for(var c: l.toCharArray()) {
+            if (c < '0') continue;
+            if (c > '9') continue;
+            return c-'0';
+        }
+
+        throw new RuntimeException("huh? " + l);
+    }
+
+    private int lastNum(String l) {
+        for(var c: new StringBuilder(l).reverse().toString().toCharArray()) {
+            if (c < '0') continue;
+            if (c > '9') continue;
+            return c-'0';
+        }
+
+        throw new RuntimeException("huh? " + l);
+    }
+
+    private List<Long> convertData2(Stream<String> data) {
+        return data.map(s -> lineToNumber2(s)).collect(Collectors.toList());
     }
 
     public long solve2(Stream<String> stream) {
-        return 0;
+        return convertData2(stream).stream().mapToLong(l -> l).sum();
+    }
+
+    private long lineToNumber2(String l) {
+        return firstNum2(l) * 10 + lastNum2(l);
+    }
+
+    private int firstNum2(String l) {
+        for(int i=0; i<l.length(); i++) {
+            if (l.substring(i).startsWith("one")) return 1;
+            if (l.substring(i).startsWith("two")) return 2;
+            if (l.substring(i).startsWith("three")) return 3;
+            if (l.substring(i).startsWith("four")) return 4;
+            if (l.substring(i).startsWith("five")) return 5;
+            if (l.substring(i).startsWith("six")) return 6;
+            if (l.substring(i).startsWith("seven")) return 7;
+            if (l.substring(i).startsWith("eight")) return 8;
+            if (l.substring(i).startsWith("nine")) return 9;
+            char c=l.charAt(i);
+            if (c < '0') continue;
+            if (c > '9') continue;
+            return c-'0';
+        }
+
+        throw new RuntimeException("huh? " + l);
+    }
+
+    private int lastNum2(String l) {
+        for(int i=l.length()-1; i>=0; i--) {
+            if (l.substring(i).startsWith("one")) return 1;
+            if (l.substring(i).startsWith("two")) return 2;
+            if (l.substring(i).startsWith("three")) return 3;
+            if (l.substring(i).startsWith("four")) return 4;
+            if (l.substring(i).startsWith("five")) return 5;
+            if (l.substring(i).startsWith("six")) return 6;
+            if (l.substring(i).startsWith("seven")) return 7;
+            if (l.substring(i).startsWith("eight")) return 8;
+            if (l.substring(i).startsWith("nine")) return 9;
+            char c=l.charAt(i);
+            if (c < '0') continue;
+            if (c > '9') continue;
+            return c-'0';
+        }
+
+        throw new RuntimeException("huh? " + l);
     }
 }
-
-/*
-
-
-
-*/
