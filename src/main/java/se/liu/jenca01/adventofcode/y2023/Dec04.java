@@ -1,18 +1,17 @@
 package se.liu.jenca01.adventofcode.y2023;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import se.liu.jenca01.adventofcode.Christmas;
 
 public class Dec04 extends Christmas {
 
     long sampleAnswer1 = 13;
-    long sampleAnswer2 = 0;
+    long sampleAnswer2 = 30;
 
     public static void main(String[] args) throws Exception {
         var christmas = new Dec04();
@@ -78,13 +77,29 @@ public class Dec04 extends Christmas {
     private int calcScore(Card card) {
         int[] winningPoints = new int [] {0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
 
-        var winnerCount = (int) card.numbers.stream().filter(n -> card.winners.contains(n)).count();
-        return winningPoints[winnerCount];
+        return winningPoints[card.winnerCount()];
     }
 
     public long solve2(Stream<String> stream) {
-        return 0;
+        var cards = convertData(stream);
+
+        var cardCounts = new int[cards.size() + 1];
+        for (int i = 1; i <= cards.size(); i++)
+            cardCounts[i] = 1;
+        for (int i = 1; i <= cards.size(); i++)
+            for(var winner: cards.get(i-1).winnerCards())
+                cardCounts[winner] += cardCounts[i];
+        return Arrays.stream(cardCounts).sum();
     }
 
-    record Card(int no, List<Integer> winners, List<Integer> numbers) {}
+    record Card(int no, List<Integer> winners, List<Integer> numbers) {
+        int winnerCount() { return (int) numbers.stream().filter(n -> winners.contains(n)).count(); }
+        List<Integer> winnerCards() {
+            int winnerCount = winnerCount();
+            return IntStream
+                    .range(no + 1, no + 1 + winnerCount)
+                    .boxed()
+                    .collect(Collectors.toList());
+        }
+    }
 }
