@@ -1,13 +1,12 @@
 package se.liu.jenca01.adventofcode.y2023;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.apache.commons.lang3.tuple.Pair;
 import se.liu.jenca01.adventofcode.Christmas;
 
 public class Dec05 extends Christmas {
@@ -142,7 +141,7 @@ public class Dec05 extends Christmas {
     public long solve2(Stream<String> stream) {
         var lines = convertData(stream);
         var currState = State.SEED;
-        var seedsList = new ArrayList<Long>();
+        var seedsList = new ArrayList<Pair<Long, Long>>();
         var ranges = new TreeMap<State, List<Range>>();
         for (var state: State.values())
             ranges.put(state, new ArrayList<>());
@@ -193,27 +192,58 @@ public class Dec05 extends Christmas {
                 throw new RuntimeException();
             }
         }
-        var locs = seedsList.stream()
-        .map(s -> mapSrc(s, ranges.get(State.SEED_SOIL)))
-        .map(s -> mapSrc(s, ranges.get(State.SOIL_FERTILIZER)))
-        .map(s -> mapSrc(s, ranges.get(State.FERTILIZER_WATER)))
-        .map(s -> mapSrc(s, ranges.get(State.WATER_LIGHT)))
-        .map(s -> mapSrc(s, ranges.get(State.LIGHT_TEMP)))
-        .map(s -> mapSrc(s, ranges.get(State.TEMP_HUMIDITY)))
-        .map(s -> mapSrc(s, ranges.get(State.HUMIDITY_LOCATION)))
-        .toList();
-        return locs.stream().mapToLong(l -> l).min().getAsLong();
+
+        var minLocation = Long.MAX_VALUE;
+        int count = 0;
+        for (var seeds: seedsList) {
+            System.out.println(String.format("%s/%s (from %s, count %s) min:%s", count++, seedsList.size(), seeds.getLeft(), seeds.getRight(), minLocation));
+            for (var seed = seeds.getLeft(); seed < seeds.getLeft() + seeds.getRight(); seed++)
+                minLocation = min(
+                        minLocation,
+                        getLocationFromSeed(ranges, seed)
+                        );
+        }
+        return minLocation;
     }
 
-    private void getSeeds2(String line, ArrayList<Long> seedsList) {
+    public long getLocationFromSeed(TreeMap<State, List<Range>> ranges, Long seed) {
+        return mapSrc(
+                mapSrc(
+                        mapSrc(
+                                mapSrc(
+                                        mapSrc(
+                                                mapSrc(
+                                                        mapSrc(
+                                                                seed,
+                                                                ranges.get(State.SEED_SOIL)),
+                                                        ranges.get(State.SOIL_FERTILIZER)),
+                                                ranges.get(State.FERTILIZER_WATER)),
+                                        ranges.get(State.WATER_LIGHT)),
+                                ranges.get(State.LIGHT_TEMP)),
+                        ranges.get(State.TEMP_HUMIDITY)),
+                ranges.get(State.HUMIDITY_LOCATION));
+    }
+
+    private long min(long a, long b) {
+        if (a <= b) return a;
+        return b;
+    }
+    private void getSeeds2(String line, ArrayList<Pair<Long,Long>> seedsList) {
         String[] seedInfo = line.split(": ")[1].split(" +");
-        for (int seedPos = 0; seedPos < seedInfo.length; seedPos += 2)
-            generateRange(Long.parseLong(seedInfo[seedPos]), Long.parseLong(seedInfo[seedPos + 1]), seedsList);
+        for (int seedPos = 0; seedPos < seedInfo.length; seedPos += 2) {
+            String startS = seedInfo[seedPos];
+            Long start = Long.parseLong(startS);
+            String countS = seedInfo[seedPos + 1];
+            Long count = Long.parseLong(countS);
+            seedsList.add(Pair.of(start, count));
+        }
     }
 
-    private void generateRange(long start, long count, List<Long> list) {
+    private List<Long> generateRange(long start, long count) {
+        var list = new ArrayList<Long>();
         for (int i=0; i<count; i++)
             list.add(start + i);
+        return list;
     }
 
     record Range(long destinationStart, long sourceStart, long length) {
