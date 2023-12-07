@@ -13,8 +13,14 @@ import se.liu.jenca01.adventofcode.Christmas;
 
 public class Dec07 extends Christmas {
 
+    final char T = (char) ('9' + 1);
+    final char J = (char) ('9' + 2);
+    final char Q = (char) ('9' + 3);
+    final char K = (char) ('9' + 4);
+    final char A = (char) ('9' + 5);
+
     long sampleAnswer1 = 6440;
-    long sampleAnswer2 = 0;
+    long sampleAnswer2 = 5905;
 
     public static void main(String[] args) throws Exception {
         var christmas = new Dec07();
@@ -43,32 +49,36 @@ public class Dec07 extends Christmas {
         System.out.println(simpleClassName() + " solve2: " + solve2(myData()));
     }
 
-    private List<Hand> convertData(Stream<String> data) {
-        return data.map(s -> parseHand(s)).toList();
+    private List<Hand> convertData(Stream<String> data, boolean useJoker) {
+        return data.map(s -> parseHand(s, useJoker)).toList();
     }
 
-    private Hand parseHand(String line) {
+    private Hand parseHand(String line, boolean useJoker) {
         var parts = line.split(" ");
-        var cards = parseCards(parts[0]);
-        var type = parseType(cards);
+        var cards = parseCards(parts[0], useJoker);
+        var type = parseType(cards, useJoker);
         var bid = Long.parseLong(parts[1]);
         return new Hand(type, parts[0], cards[0], cards[1], cards[2], cards[3], cards[4], bid);
     }
 
-    private char[] parseCards(String cards) {
+    private char[] parseCards(String cards, boolean useJoker) {
         var betterCards = cards
-                .replace('T', (char) ('9' + 1))
-                .replace('J', (char) ('9' + 2))
-                .replace('Q', (char) ('9' + 3))
-                .replace('K', (char) ('9' + 4))
-                .replace('A', (char) ('9' + 5));
+                .replace('T', T)
+                .replace('J', useJoker ? '1' : J)
+                .replace('Q', Q)
+                .replace('K', K)
+                .replace('A', A);
+
         return betterCards.toCharArray();
     }
 
-    private Type parseType(char[] cards) {
+    private Type parseType(char[] cards, boolean useJoker) {
         var cardValues = new TreeMap<Character, Integer>();
         for(var c: cards)
             cardValues.put(c, plusOne(cardValues, c));
+
+        if (useJoker)
+            useJoker(cardValues);
 
         switch (cardValues.size()) {
         case 1: return Type.FIVE_OF_A_KIND;
@@ -79,6 +89,25 @@ public class Dec07 extends Christmas {
         }
 
         throw new RuntimeException();
+    }
+
+    private void useJoker(TreeMap<Character, Integer> cardValues) {
+        if (cardValues.size() == 1)
+            return;
+        if (!cardValues.containsKey('1'))
+            return;
+
+        int jokerCount = cardValues.remove('1');
+        int maxCount = 0;
+        char strongestCard = '0';
+        for (var c: cardValues.keySet()) {
+            if (cardValues.get(c) > maxCount) {
+                maxCount = cardValues.get(c);
+                strongestCard = c;
+            } else if (cardValues.get(c) == maxCount && c > strongestCard)
+                strongestCard = c;
+        }
+        cardValues.put(strongestCard, cardValues.get(strongestCard) + jokerCount);
     }
 
     private Type analyze2(TreeMap<Character, Integer> cardValues) {
@@ -102,7 +131,11 @@ public class Dec07 extends Christmas {
     }
 
     public long solve1(Stream<String> stream) {
-        var hands = convertData(stream);
+        var hands = convertData(stream, false);
+        return solve12(hands);
+    }
+
+    private long solve12(List<Hand> hands) {
         var sortedHands = new TreeSet<>(hands);
         long winnings = 0;
         int handCount = 1;
@@ -112,7 +145,8 @@ public class Dec07 extends Christmas {
     }
 
     public long solve2(Stream<String> stream) {
-        return 0;
+        var hands = convertData(stream, true);
+        return solve12(hands);
     }
 
     enum Type {
