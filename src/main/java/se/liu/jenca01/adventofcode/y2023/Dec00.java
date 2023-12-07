@@ -52,9 +52,3 @@ public class Dec00 extends Christmas {
         return 0;
     }
 }
-
-/*
-
-
-
-*/
