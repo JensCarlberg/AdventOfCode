@@ -1,14 +1,12 @@
 package se.liu.jenca01.adventofcode.y2023;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.tuple.Pair;
-
 import se.liu.jenca01.adventofcode.Christmas;
 
 public class Dec08 extends Christmas {
@@ -69,18 +67,25 @@ public class Dec08 extends Christmas {
         var directions = data.getLeft();
         var nodes = data.getRight();
         String start = "AAA";
+        List<String> ends = List.of("ZZZ");
+        return solve(directions, nodes, start, ends);
+    }
+
+    public long solve(String directions, Map<String, Pair<String, String>> nodes, String start, List<String> ends) {
+        long steps = 0;
+        int dirPos = 0;
         String currentPos = start;
-        String end = "ZZZ";
-        int steps = 0;
         while (true) {
             var youAreHere = nodes.get(currentPos);
-            var dir = directions.charAt(steps++ % directions.length());
+            var dir = directions.charAt(dirPos);
+            steps++;
+            dirPos = (dirPos + 1) % directions.length();
             switch(dir) {
             case 'L': currentPos = youAreHere.getLeft(); break;
             case 'R': currentPos = youAreHere.getRight(); break;
             default: throw new RuntimeException();
             }
-            if (currentPos.equals(end)) break;
+            if (ends.contains(currentPos)) break;
         }
         return steps;
     }
@@ -89,38 +94,81 @@ public class Dec08 extends Christmas {
         var data = convertData(stream);
         var directions = data.getLeft();
         var nodes = data.getRight();
-        int steps = 0;
-        List<String> currentPos = getAllEndingInA(nodes);
+        var startPos = getAllEndingIn('A', nodes);
+        var endPos = getAllEndingIn('Z', nodes);
+        var steps = new ArrayList<Long>();
 
-        while (true) {
-            var dir = directions.charAt(steps++ % directions.length());
-            var youAreHere = getCurrentPosNodes(nodes, currentPos);
-            var nextPos = youAreHere
-                    .map(n -> dir == 'L' ? nodes.get(n).getLeft() : nodes.get(n).getRight())
-                    .toList();
+        for (var start: startPos)
+            steps.add(solve(directions, nodes, start, endPos));
 
-            currentPos = nextPos;
 
-            var notAnExit = getAllNotEndingInZ(nextPos);
-            if (notAnExit.size() == 0) break;
-            if (steps % 10000 == 0) System.out.print(".");
-            if (steps % 1000000 == 0) System.out.println();
-        }
-        System.out.println();
-
-        return steps;
+        return lcm2(steps);
     }
 
     private Stream<String> getCurrentPosNodes(Map<String, Pair<String, String>> nodes, List<String> currentPos) {
         return nodes.keySet().stream().filter(n -> currentPos.contains(n));
     }
 
-    private List<String> getAllEndingInA(Map<String, Pair<String, String>> nodes) {
-        return nodes.keySet().stream().filter(n -> 'A' == n.charAt(2)).toList();
+    private List<String> getAllEndingIn(char endsIn, Map<String, Pair<String, String>> nodes) {
+        return nodes.keySet().stream().filter(n -> endsIn == n.charAt(2)).toList();
     }
 
     private List<String> getAllNotEndingInZ(List<String> nodeNames) {
         return nodeNames.stream().filter(n -> 'Z' != n.charAt(2)).toList();
+    }
+
+    private long lcm(List<Long> numbers) {
+        System.out.print("Testar");
+        for (long num: numbers)
+            System.out.print(" " + num);
+        System.out.println();
+        long lcmGuess = 2;
+        while (true) {
+            boolean found = true;
+            for (long num: numbers)
+                if (lcmGuess % num != 0) {
+                    found = false;
+                    break;
+                }
+            if (found) {
+                System.out.println();
+                return lcmGuess;
+            }
+            lcmGuess++;
+            if (lcmGuess % 1000000000 == 0) System.out.print(".");
+            if (lcmGuess % 10000000000L == 0) System.out.println();
+        }
+    }
+
+    private long lcm2(List<Long> numbers) {
+        long max = numbers.stream().mapToLong(l -> l).max().getAsLong();
+        var primes = new ArrayList<Long>();
+        primes.add(2L);
+        primes: for (long l = 3; l < Math.sqrt(max); l++) {
+            for (var p: primes)
+                if (l % p == 0) continue primes;
+            primes.add(l);
+        }
+        var factors = new TreeMap<Long, List<Long>>();
+        for (var num: numbers)
+            factors.put(num, factors(num, primes));
+        return 6;
+    }
+
+    private List<Long> factors(long num, List<Long> primes) {
+        var factors = new ArrayList<Long>();
+        for (int i=0 ; i<primes.size(); ) {
+            Long prime = primes.get(i);
+            if (num % prime == 0) {
+                factors.add(prime);
+                num /= prime;
+            } else {
+                i++;
+            }
+        }
+        if (num != 1)
+            factors.add(num);
+        return factors;
     }
 
     record Node(String name, Pair<String, String> connectedNodes) {}
