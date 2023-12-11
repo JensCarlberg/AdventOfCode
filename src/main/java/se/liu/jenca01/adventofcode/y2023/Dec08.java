@@ -149,10 +149,40 @@ public class Dec08 extends Christmas {
                 if (l % p == 0) continue primes;
             primes.add(l);
         }
-        var factors = new TreeMap<Long, List<Long>>();
+        var primeFactors = new TreeMap<Long, List<Long>>();
         for (var num: numbers)
-            factors.put(num, factors(num, primes));
-        return 6;
+            primeFactors.put(num, factors(num, primes));
+        return lcm3(primeFactors);
+    }
+
+    private long lcm3(Map<Long, List<Long>> numbersAndPrimeFactors) {
+        var maxPrimeCounts = new TreeMap<Long, Integer>();
+        for (var num: numbersAndPrimeFactors.keySet()) {
+            var primeCounts = new TreeMap<Long, Integer>();
+            for (var prime: numbersAndPrimeFactors.get(num))
+                addOne(primeCounts, prime);
+            for (var prime: primeCounts.keySet())
+                putLargestCount(prime, maxPrimeCounts, primeCounts);
+        }
+        long lcm = 1L;
+        for (var prime: maxPrimeCounts.keySet())
+            for (int i=0; i<maxPrimeCounts.get(prime); i++)
+                lcm *= prime;
+
+        return lcm;
+    }
+
+    private void putLargestCount(Long prime, TreeMap<Long, Integer> maxPrimeCounts, TreeMap<Long, Integer> primeCounts) {
+        if (maxPrimeCounts.containsKey(prime))
+            maxPrimeCounts.put(prime, Math.max(maxPrimeCounts.get(prime), primeCounts.get(prime)));
+        else
+            maxPrimeCounts.put(prime, primeCounts.get(prime));
+    }
+
+    private void addOne(TreeMap<Long, Integer> primeCounts, Long prime) {
+        if (!primeCounts.containsKey(prime))
+            primeCounts.put(prime, 0);
+        primeCounts.put(prime, primeCounts.get(prime) + 1);
     }
 
     private List<Long> factors(long num, List<Long> primes) {
