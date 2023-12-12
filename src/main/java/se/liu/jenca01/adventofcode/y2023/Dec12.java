@@ -1,12 +1,10 @@
 package se.liu.jenca01.adventofcode.y2023;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-
 import se.liu.jenca01.adventofcode.Christmas;
 
 public class Dec12 extends Christmas {
@@ -68,7 +66,7 @@ public class Dec12 extends Christmas {
         var parts = line.split(" ");
         var conditions = parts[0];
         var counts = parseCounts(parts[1]);
-        var unfoldedConditions = conditions + conditions + conditions + conditions + conditions;
+        var unfoldedConditions = String.format("%s?%s?%s?%s?%s", conditions, conditions, conditions, conditions, conditions);
         var unfoldedCounts = new ArrayList<Integer>();
         unfoldedCounts.addAll(counts);
         unfoldedCounts.addAll(counts);
