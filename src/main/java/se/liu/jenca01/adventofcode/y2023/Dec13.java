@@ -82,7 +82,7 @@ public class Dec13 extends Christmas {
         var data = convertData(stream);
         long reflectionCalc = 0;
         for (var pattern: data) {
-            var reflectVertical = calcReflection(transcribe(pattern));
+            var reflectVertical = calcReflection(transpose(pattern));
             if (reflectVertical != 0) {
                 reflectionCalc += reflectVertical + 1;
                 continue;
@@ -120,7 +120,7 @@ public class Dec13 extends Christmas {
         return true;
     }
 
-    private char[][] transcribe(char[][] pattern) {
+    private char[][] transpose(char[][] pattern) {
         var transcribed = new char[pattern[0].length][pattern.length];
         for (var row=0; row<pattern.length; row++)
             for (var col=0; col<pattern[row].length; col++)
