@@ -3,6 +3,7 @@ package se.liu.jenca01.adventofcode.y2023;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.stream.Stream;
 
 import se.liu.jenca01.adventofcode.Christmas;
@@ -39,10 +40,12 @@ public class Dec14 extends Christmas {
 
     @Override
     public void solveMy() throws Exception {
+        System.out.println(new Date());
         long start = System.currentTimeMillis();
         System.out.println(simpleClassName() + " solve1: " + solve1(myData()));
         long stop = System.currentTimeMillis();
         System.out.println("solve1 timing: " + (stop-start) + "ms");
+        System.out.println(new Date());
 
         System.out.println(simpleClassName() + " solve2: " + solve2(myData()));
     }
