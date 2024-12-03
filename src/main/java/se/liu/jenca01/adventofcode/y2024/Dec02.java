@@ -68,31 +68,29 @@ public class Dec02 extends Christmas {
     	if (report.size() < 2) {
 			return true;
 		}
-    	var comp = getComp(report.get(0), report.get(1));
-    	if (comp == 0) {
-			return false;
-		}
-    	for (int i=1; i<report.size(); i++) {
-			if (getComp(report.get(i-1), report.get(i)) != comp || getStep(report.get(i-1), report.get(i)) > 3) {
+    	return checkReport(report, 1L, 3L, false) || checkReport(report, -3L, -1L, false);
+	}
+
+	private boolean checkReport(List<Long> report, long lower, long upper, boolean mergeOnce) {
+		for(var pos=0; pos<report.size()-1; pos++) {
+			if (!between(report.get(pos)-report.get(pos+1), lower, upper)) {
+				if (mergeOnce) {
+					return checkReport(dampenReport(report, pos), lower, upper, false) || checkReport(dampenReport(report, pos+1), lower, upper, false);
+				}
 				return false;
 			}
 		}
 		return true;
 	}
 
-	private int getComp(Long a, Long b) {
-		var tempComp = a.compareTo(b);
-		if (tempComp < 0) {
-			return -1;
-		}
-		if (tempComp > 0) {
-			return 1;
-		}
-		return 0;
+	private List<Long> dampenReport(List<Long> report, int pos) {
+		var dampenedReport = new ArrayList<Long>(report);
+		dampenedReport.remove(pos);
+		return dampenedReport;
 	}
 
-	private long getStep(Long a, Long b) {
-		return Math.abs(a-b);
+	private boolean between(Long diff, long lower, long upper) {
+		return diff >= lower && diff <= upper;
 	}
 
 	public long solve2(Stream<String> stream) {
@@ -107,34 +105,12 @@ public class Dec02 extends Christmas {
     }
 
     private boolean isSafe2(List<Long> report) {
-    	return isSafe2(report, true);
-    }
-
-    private boolean isSafe2(List<Long> report, boolean canRetry) {
     	if (report.size() < 2) {
 			return true;
 		}
-    	var comp = getComp(report.get(0), report.get(1));
-    	if (comp == 0) {
-			return false;
-		}
+    	return checkReport(report, 1L, 3L, true) || checkReport(report, -3L, -1L, true);
+    }
 
-    	for (int i=1; i<report.size(); i++) {
-			if (getComp(report.get(i-1), report.get(i)) != comp || getStep(report.get(i-1), report.get(i)) > 3) {
-				if (!canRetry) {
-					return false;
-				}
-				var report1 = new ArrayList<Long>(report);
-				report1.remove(i);
-				var report2 = new ArrayList<Long>(report);
-				report2.remove(i-1);
-				var report3 = new ArrayList<Long>(report);
-				report3.remove(0);
-				return isSafe2(report1, false) || isSafe2(report2, false) || isSafe2(report3, false);
-			}
-		}
-		return true;
-	}
 }
-// 360
+// 366 is the right answer, why do I get more?
 
