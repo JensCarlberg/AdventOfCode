@@ -16,7 +16,7 @@ import se.liu.jenca01.adventofcode.Christmas;
 public class Dec05 extends Christmas {
 
     long sampleAnswer1 = 143;
-    long sampleAnswer2 = 0;
+    long sampleAnswer2 = 123;
 
     public static void main(String[] args) throws Exception {
         var christmas = new Dec05();
@@ -107,6 +107,22 @@ public class Dec05 extends Christmas {
 	}
 
 	public long solve2(Stream<String> stream) {
-        return 0;
+    	var lines = convertData(stream);
+    	var rules = getRules(lines);
+    	var updates = getUpdates(lines);
+
+    	var nonPrintable = updates.stream()
+    			.filter(u -> !isCorrectPrintingOrder(u, rules))
+    			.map(l -> fixOrder(l))
+    			.toList();
+    	var pageSum = 0L;
+    	for (var update : nonPrintable)
+    		pageSum += update.get((update.size() - 1) / 2);
+        return pageSum;
     }
+
+	private List<Long> fixOrder(List<Long> l) {
+		// TODO Auto-generated method stub
+		return l;
+	}
 }
