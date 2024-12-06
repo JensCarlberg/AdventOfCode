@@ -94,17 +94,36 @@ public class Dec05 extends Christmas {
     }
 
 	private boolean isCorrectPrintingOrder(List<Long> update, Map<Long, Set<Long>> rules) {
+		var tooEarlyPos = tooEarlyPosition(update, rules);
+		return tooEarlyPos.isEmpty();
+	}
+
+	private List<Integer> tooEarlyPosition(List<Long> update, Map<Long, Set<Long>> rules) {
+		var pagesTooEarly = new ArrayList<Integer>();
 		for(int i=0; i<update.size()-1; i++) {
 			var page = update.get(i);
 			var pagesThatShouldGoBefore = rules.get(page);
 			for(int j=i+1; j<update.size(); j++) {
 				var laterPageInUpdate = update.get(j);
 				if (pagesThatShouldGoBefore != null && pagesThatShouldGoBefore.contains(laterPageInUpdate))
-					return false;
+					pagesTooEarly.add(i);
 			}
 		}
-		return true;
+		return pagesTooEarly;
 	}
+
+//	private Optional<Integer> tooEarlyPosition(List<Long> update, Map<Long, Set<Long>> rules) {
+//		for(int i=0; i<update.size()-1; i++) {
+//			var page = update.get(i);
+//			var pagesThatShouldGoBefore = rules.get(page);
+//			for(int j=i+1; j<update.size(); j++) {
+//				var laterPageInUpdate = update.get(j);
+//				if (pagesThatShouldGoBefore != null && pagesThatShouldGoBefore.contains(laterPageInUpdate))
+//					return Optional.of(i);
+//			}
+//		}
+//		return Optional.empty();
+//	}
 
 	public long solve2(Stream<String> stream) {
     	var lines = convertData(stream);
@@ -113,7 +132,7 @@ public class Dec05 extends Christmas {
 
     	var nonPrintable = updates.stream()
     			.filter(u -> !isCorrectPrintingOrder(u, rules))
-    			.map(l -> fixOrder(l))
+    			.map(l -> fixOrder(l, rules))
     			.toList();
     	var pageSum = 0L;
     	for (var update : nonPrintable)
@@ -121,8 +140,22 @@ public class Dec05 extends Christmas {
         return pageSum;
     }
 
-	private List<Long> fixOrder(List<Long> l) {
+	private List<Long> fixOrder(List<Long> list, Map<Long, Set<Long>> rules) {
+		var tooEarly = tooEarlyPosition(list, rules).reversed();
+		while (!tooEarly.isEmpty()) {
+			for (var pos: tooEarly)
+				list = switch2(list, pos, pos+1);
+			tooEarly = tooEarlyPosition(list, rules).reversed();
+		}
+		return list;
+	}
+
+	private List<Long> switch2(List<Long> orig, int pos1, int pos2) {
+		var copy = new ArrayList<Long>(orig);
 		// TODO Auto-generated method stub
-		return l;
+		var val1 = copy.get(pos1);
+		copy.set(pos1, copy.get(pos2));
+		copy.set(pos2, val1);
+		return copy;
 	}
 }
